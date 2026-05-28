@@ -7,7 +7,8 @@
 
 use crate::types::{Clue, PuzzleMetadata, Suspect};
 use cougr_core::component::{ComponentStorage, ComponentTrait};
-use soroban_sdk::{contracttype, symbol_short, Bytes, Env, Symbol, Vec};
+use soroban_sdk::xdr::{FromXdr, ToXdr};
+use soroban_sdk::{contracttype, symbol_short, Bytes, Env, String, Symbol, Vec};
 
 // ─── GridComponent ─────────────────────────────────────────────────────────
 
@@ -25,12 +26,10 @@ impl ComponentTrait for GridComponent {
     }
 
     fn serialize(&self, env: &Env) -> Bytes {
-        use soroban_sdk::xdr::ToXdr;
         self.to_xdr(env)
     }
 
     fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
-        use soroban_sdk::xdr::FromXdr;
         Self::from_xdr(env, data).ok()
     }
 
@@ -54,12 +53,10 @@ impl ComponentTrait for SuspectListComponent {
     }
 
     fn serialize(&self, env: &Env) -> Bytes {
-        use soroban_sdk::xdr::ToXdr;
         self.to_xdr(env)
     }
 
     fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
-        use soroban_sdk::xdr::FromXdr;
         Self::from_xdr(env, data).ok()
     }
 
@@ -83,12 +80,10 @@ impl ComponentTrait for ClueListComponent {
     }
 
     fn serialize(&self, env: &Env) -> Bytes {
-        use soroban_sdk::xdr::ToXdr;
         self.to_xdr(env)
     }
 
     fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
-        use soroban_sdk::xdr::FromXdr;
         Self::from_xdr(env, data).ok()
     }
 
@@ -112,12 +107,10 @@ impl ComponentTrait for SolutionComponent {
     }
 
     fn serialize(&self, env: &Env) -> Bytes {
-        use soroban_sdk::xdr::ToXdr;
         self.to_xdr(env)
     }
 
     fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
-        use soroban_sdk::xdr::FromXdr;
         Self::from_xdr(env, data).ok()
     }
 
@@ -141,12 +134,10 @@ impl ComponentTrait for PuzzleMetaComponent {
     }
 
     fn serialize(&self, env: &Env) -> Bytes {
-        use soroban_sdk::xdr::ToXdr;
         self.to_xdr(env)
     }
 
     fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
-        use soroban_sdk::xdr::FromXdr;
         Self::from_xdr(env, data).ok()
     }
 
@@ -172,12 +163,10 @@ impl ComponentTrait for PlayerProgressComponent {
     }
 
     fn serialize(&self, env: &Env) -> Bytes {
-        use soroban_sdk::xdr::ToXdr;
         self.to_xdr(env)
     }
 
     fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
-        use soroban_sdk::xdr::FromXdr;
         Self::from_xdr(env, data).ok()
     }
 
@@ -199,3 +188,30 @@ pub struct PuzzleStatusComponent {
 // PuzzleStatusComponent uses `impl_component!` because it contains only
 // fixed-size primitives supported by the macro (bool + u32 = 5 bytes).
 cougr_core::impl_component!(PuzzleStatusComponent, "status", Table, { active: bool, total_solvers: u32 });
+
+/// Solution commitment component storing the Poseidon2 hash (ZK mode).
+#[cfg(feature = "zk")]
+#[derive(Clone, Debug, PartialEq)]
+pub struct SolutionCommitment {
+    pub commitment: soroban_sdk::BytesN<32>,
+}
+
+#[cfg(feature = "zk")]
+impl ComponentTrait for SolutionCommitment {
+    fn component_type() -> Symbol {
+        symbol_short!("solcommit")
+    }
+
+    fn serialize(&self, env: &Env) -> Bytes {
+        self.commitment.clone().to_xdr(env)
+    }
+
+    fn deserialize(env: &Env, data: &Bytes) -> Option<Self> {
+        let commitment = soroban_sdk::BytesN::<32>::from_xdr(env, data).ok()?;
+        Some(Self { commitment })
+    }
+
+    fn default_storage() -> ComponentStorage {
+        ComponentStorage::Table
+    }
+}
